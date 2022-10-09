@@ -8,6 +8,8 @@ REM unreferenced formal parameter
 set CommonCompilerFlags=%CommonCompilerFlags% -wd4100
 REM unreferenced local variable
 set CommonCompilerFlags=%CommonCompilerFlags% -wd4101
+REM named type definition in parentheses
+set CommonCompilerFlags=%CommonCompilerFlags% -wd4115
 REM unnamed type definition in parentheses
 set CommonCompilerFlags=%CommonCompilerFlags% -wd4116
 REM local variable is initialized but not referenced

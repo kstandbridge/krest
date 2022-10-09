@@ -1,5 +1,4 @@
 #ifndef KREST_H
-#define KREST_H
 
 #include "kengine_platform.h"
 #include "kengine_generated.h"
@@ -13,4 +12,90 @@
 #define VERSION 0
 #endif // VERSION
 
+
+// TODO(kstandbridge): Should this be app state?
+typedef struct server_context
+{
+    memory_arena *Arena;
+    
+    
+    HTTPAPI_VERSION Version;
+    HTTP_SERVER_SESSION_ID SessionId;
+    HTTP_URL_GROUP_ID UrlGroupId;
+    HANDLE RequestQueue;
+    PTP_IO IoThreadpool;
+    // TODO(kstandbridge): Rename to is initalized?
+    b32 HttpInit;
+    b32 StopServer;
+} server_context;
+
+typedef void http_completion_function(struct http_io_context *pIoContext, PTP_IO IoThreadpool, u32 IoResult);
+
+// TODO(kstandbridge): Rename http_io_state?
+typedef struct http_io_context
+{
+    OVERLAPPED Overlapped;
+    http_completion_function *CompletionFunction;
+    server_context *ServerContext;
+    
+} http_io_context;
+
+#define REQUEST_BUFFER_SIZE 4096
+
+typedef struct http_io_request
+{
+    http_io_context IoContext;
+    
+    HTTP_REQUEST *HttpRequest;
+    
+    u8 Buffer[REQUEST_BUFFER_SIZE];
+    
+} http_io_request;
+
+internal void ReceiveCompletionCallback(http_io_context *pIoContext, PTP_IO IoThreadpool, u32 IoResult);
+
+inline http_io_request *
+AllocateHttpIoRequest(server_context *ServerContext)
+{
+    http_io_request *Result = PushStruct(ServerContext->Arena, http_io_request);
+    
+    Result->IoContext.ServerContext = ServerContext;
+    Result->IoContext.CompletionFunction = ReceiveCompletionCallback;
+    Result->HttpRequest = (HTTP_REQUEST *)Result->Buffer;
+    
+    return Result;
+}
+
+typedef struct http_io_response
+{
+    http_io_context IoContext;
+    
+    HTTP_RESPONSE HttpResponse;
+    
+    HTTP_DATA_CHUNK HttpDataChunk;
+    
+} http_io_response;
+
+internal void SendCompletionCallback(http_io_context *IoContext, PTP_IO IoThreadpool, u32 IoResult);
+
+inline http_io_response *
+AllocateHttpIoResponse(server_context *ServerContext)
+{
+    http_io_response *Result = PushStruct(ServerContext->Arena, http_io_response);
+    Result->IoContext.ServerContext = ServerContext;
+    Result->IoContext.CompletionFunction = SendCompletionCallback;
+    
+    Result->HttpResponse.EntityChunkCount = 1;
+    Result->HttpResponse.pEntityChunks = &Result->HttpDataChunk;
+    
+    char *ContentType = "application/json";
+    Result->HttpResponse.Headers.KnownHeaders[HttpHeaderContentType].pRawValue = ContentType;
+    Result->HttpResponse.Headers.KnownHeaders[HttpHeaderContentType].RawValueLength = GetNullTerminiatedStringLength(ContentType);
+    
+    return Result;
+}
+
+
+
+#define KREST_H
 #endif //KREST_H
