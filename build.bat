@@ -50,10 +50,15 @@ if "%~1"=="build_release" (
 		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od ..\lib\kengine\code\win32_kengine_tests.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
 		win32_kengine_tests.exe
 
+		REM Win32 platform
+		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od ..\lib\kengine\code\win32_kengine_http.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
+
+		REM stress test
+		cl %CommonCompilerFlags% %InternalCompilerFlags% %IncludeDirectories% -MTd -Od ..\src\stress_test.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
+
 	) else (
 
-		cl %CommonCompilerFlags% %InternalCompilerFlags% %IncludeDirectories% -MTd -Od ..\src\krest.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags% Uuid.lib
-
+		cl %CommonCompilerFlags% %InternalCompilerFlags% %IncludeDirectories% -MTd -Od ..\src\krest.c -LD /link /NODEFAULTLIB %CommonLinkerFlags%
 	)
 )
 
