@@ -1,4 +1,5 @@
 #include "kengine_platform.h"
+#include "kengine_memory.h"
 #include "kengine_generated.h"
 #include "win32_kengine_types.h"
 #include "kengine_string.h"
@@ -89,7 +90,7 @@ SpamHttpThread(spam_http_work *Work)
         temporary_memory MemoryFlush = BeginTemporaryMemory(&Task->Arena);
         string Request = FormatString(MemoryFlush.Arena, "ThreadId: %u Message: %u Random: %u", ThreadId, SpamIndex, RandomU32(&RandomState));
         u8 *ResponseBuffer = BeginPushSize(MemoryFlush.Arena);
-        umm ResponseMaxSize = (MemoryFlush.Arena->Size - MemoryFlush.Arena->Used);
+        umm ResponseMaxSize = (MemoryFlush.Arena->CurrentBlock->Size - MemoryFlush.Arena->CurrentBlock->Used);
         umm ResponseSize = Win32SendInternetRequest(String("http://localhost"), 8090, String("/echo"), "GET", 
                                                     Request, ResponseBuffer, ResponseMaxSize, 0, 0, 0);
         EndPushSize(MemoryFlush.Arena, ResponseSize);
@@ -111,19 +112,15 @@ mainCRTStartup()
     Kernel32 = FindModuleBase(_ReturnAddress());
     Assert(Kernel32);
     
-#if KENGINE_INTERNAL
-    void *BaseAddress = (void *)Terabytes(2);
-#else
-    void *BaseAddress = 0;
-#endif
+    Platform.AllocateMemory = Win32AllocateMemory;
+    Platform.DeallocateMemory = Win32DeallocateMemory;
     
-    u64 StorageSize = Megabytes(512);
-    void *Storage = Win32VirtualAlloc(BaseAddress, StorageSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+    GlobalWin32State.MemorySentinel.Prev = &GlobalWin32State.MemorySentinel;
+    GlobalWin32State.MemorySentinel.Next = &GlobalWin32State.MemorySentinel;
     
     memory_arena Arena_;
     ZeroStruct(Arena_);
     memory_arena *Arena = &Arena_;
-    InitializeArena(Arena, StorageSize, Storage);
     
     HANDLE ProcessHandle = Win32GetCurrentProcess();
     DWORD_PTR ProcessAffintyMask;
@@ -150,14 +147,6 @@ mainCRTStartup()
     
     LogVerbose("Making %u threads", ThreadCount);
     Win32MakeQueue(&AppState->WorkQueue, ThreadCount);
-    for(u32 TaskIndex = 0;
-        TaskIndex < ArrayCount(AppState->Tasks);
-        ++TaskIndex)
-    {
-        task_with_memory *Task = AppState->Tasks + TaskIndex;
-        Task->InUse = false;
-        SubArena(&Task->Arena, Arena, Kilobytes(128));
-    }
     
     for(u32 TaskIndex = 0;
         TaskIndex < ArrayCount(AppState->Tasks);
