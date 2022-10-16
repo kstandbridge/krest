@@ -41,7 +41,7 @@ pushd bin
 
 if "%~1"=="build_release" (
 
-	cl %CommonCompilerFlags% %IncludeDirectories% -O2 ..\src\krest.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags% Uuid.lib
+	cl %CommonCompilerFlags% -O2 -I..\src ..\lib\kengine\code\win32_kengine.c /Fe:win32_kengine_release.exe /link /NODEFAULTLIB /SUBSYSTEM:windows %CommonLinkerFlags%
 
 ) else (
 	if "%~1"=="build_dependencies" (
@@ -62,14 +62,20 @@ if "%~1"=="build_release" (
 		win32_kengine_tests.exe
 
 		REM Win32 platform
-		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od ..\lib\kengine\code\win32_kengine_http.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
-
-		REM stress test
-		cl %CommonCompilerFlags% %InternalCompilerFlags% %IncludeDirectories% -MTd -Od ..\src\stress_test.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
+		cl %CommonCompilerFlags% %InternalCompilerFlags% -O2 -DKENGINE_HTTP=1 ..\lib\kengine\code\win32_kengine.c /Fe:win32_kengine_debug.exe /link /NODEFAULTLIB /SUBSYSTEM:windows %CommonLinkerFlags%
 
 	) else (
 
-		REM cl %CommonCompilerFlags% %InternalCompilerFlags% %IncludeDirectories% -MTd -Od ..\src\krest.c -LD /link /NODEFAULTLIB %CommonLinkerFlags%
+		REM stress test
+		REM cl %CommonCompilerFlags% %InternalCompilerFlags% %IncludeDirectories% -DKENGINE_CONSOLE=1 -MTd -Od ..\src\stress_test.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
+				
+		del kengine_*.pdb > NUL 2> NUL
+
+		REM Application
+		echo WAITING FOR PDB > lock.tmp
+		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -I..\src ..\lib\kengine\code\kengine.c -LD /link %CommonLinkerFlags% -PDB:kengine_%random%.pdb -EXPORT:AppUpdateFrame -EXPORT:DebugUpdateFrame -EXPORT:AppHandleHttpRequest
+		del lock.tmp
+	
 	)
 )
 
