@@ -41,7 +41,7 @@ pushd bin
 
 if "%~1"=="build_release" (
 
-	cl %CommonCompilerFlags% -O2 -I..\src ..\lib\kengine\code\win32_kengine.c /Fe:win32_kengine_release.exe /link /NODEFAULTLIB /SUBSYSTEM:windows %CommonLinkerFlags%
+	cl %CommonCompilerFlags% -O2 -DKENGINE_HTTP=1 -DKENGINE_CONSOLE=1 -I..\src ..\lib\kengine\code\win32_kengine.c /Fe:krest.exe /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
 
 ) else (
 	if "%~1"=="build_dependencies" (
@@ -49,9 +49,9 @@ if "%~1"=="build_release" (
 		REM Preprocessor
 		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od ..\lib\kengine\code\win32_kengine_preprocessor.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
 		pushd ..\lib\kengine\code
-		REM ..\..\..\bin\win32_kengine_preprocessor.exe kengine_types.h > kengine_generated.h
-		REM ..\..\..\bin\win32_kengine_preprocessor.exe kengine_debug.h > kengine_debug_generated.h
-		REM ..\..\..\bin\win32_kengine_preprocessor.exe win32_kengine_types.h > win32_kengine_generated.c
+		..\..\..\bin\win32_kengine_preprocessor.exe kengine_types.h > kengine_generated.h
+		..\..\..\bin\win32_kengine_preprocessor.exe kengine_debug.h > kengine_debug_generated.h
+		..\..\..\bin\win32_kengine_preprocessor.exe win32_kengine_types.h > win32_kengine_generated.c
 		popd
 		pushd ..\src
 		REM ..\bin\win32_kengine_preprocessor.exe krest.h > generated.c
@@ -62,18 +62,15 @@ if "%~1"=="build_release" (
 		win32_kengine_tests.exe
 
 		REM Win32 platform
-		cl %CommonCompilerFlags% %InternalCompilerFlags% -O2 -DKENGINE_HTTP=1 ..\lib\kengine\code\win32_kengine.c /Fe:win32_kengine_debug.exe /link /NODEFAULTLIB /SUBSYSTEM:windows %CommonLinkerFlags%
+		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -DKENGINE_HTTP=1 -DKENGINE_CONSOLE=1 ..\lib\kengine\code\win32_kengine.c /Fe:krest.exe /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
 
 	) else (
 
-		REM stress test
-		REM cl %CommonCompilerFlags% %InternalCompilerFlags% %IncludeDirectories% -DKENGINE_CONSOLE=1 -MTd -Od ..\src\stress_test.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
-				
 		del kengine_*.pdb > NUL 2> NUL
 
 		REM Application
 		echo WAITING FOR PDB > lock.tmp
-		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -I..\src ..\lib\kengine\code\kengine.c -LD /link %CommonLinkerFlags% -PDB:kengine_%random%.pdb -EXPORT:AppUpdateFrame -EXPORT:DebugUpdateFrame -EXPORT:AppHandleHttpRequest
+		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -DKENGINE_HTTP=1 -DKENGINE_CONSOLE=1 -I..\src ..\lib\kengine\code\kengine.c -LD /link %CommonLinkerFlags% -PDB:kengine_%random%.pdb -EXPORT:AppTick_ -EXPORT:AppHandleHttpRequest -EXPORT:AppHandleCommand
 		del lock.tmp
 	
 	)
