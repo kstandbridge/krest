@@ -41,7 +41,7 @@ pushd bin
 
 if "%~1"=="build_release" (
 
-	cl %CommonCompilerFlags% -O2 -DKENGINE_HTTP=1 -DKENGINE_CONSOLE=1 -I..\src ..\lib\kengine\code\win32_kengine.c /Fe:krest.exe /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
+	cl %CommonCompilerFlags% -O2 -DKENGINE_HTTP=1 -DKENGINE_CONSOLE=1 -I..\src ..\lib\kengine\code\win32_kengine.c /Fe:krest.exe /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags% uuid.lib
 
 ) else (
 	if "%~1"=="build_dependencies" (
@@ -53,16 +53,13 @@ if "%~1"=="build_release" (
 		..\..\..\bin\win32_kengine_preprocessor.exe kengine_debug.h > kengine_debug_generated.h
 		..\..\..\bin\win32_kengine_preprocessor.exe win32_kengine_types.h > win32_kengine_generated.c
 		popd
-		pushd ..\src
-		REM ..\bin\win32_kengine_preprocessor.exe krest.h > generated.c
-		popd
-
+		
 		REM Unit tests
 		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od ..\lib\kengine\code\win32_kengine_tests.c /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
 		win32_kengine_tests.exe
 
 		REM Win32 platform
-		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -DKENGINE_HTTP=1 -DKENGINE_CONSOLE=1 ..\lib\kengine\code\win32_kengine.c /Fe:krest.exe /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags%
+		cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -DKENGINE_HTTP=1 -DKENGINE_CONSOLE=1 ..\lib\kengine\code\win32_kengine.c /Fe:krest.exe /link /NODEFAULTLIB /SUBSYSTEM:console %CommonLinkerFlags% uuid.lib
 
 	) else (
 
